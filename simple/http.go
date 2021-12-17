@@ -6,6 +6,7 @@ import (
 	"regexp"
 
 	"github.com/plato-systems/pypihub/config"
+	"github.com/plato-systems/pypihub/redirect"
 )
 
 var simpleRe = regexp.MustCompile("^/simple/([a-z0-9-]*)/?$")
@@ -46,6 +47,13 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		error500(w)
 		return
+	}
+
+	for i := range assets {
+		a := &assets[i]
+		rd := "/redirect/" + a.Name
+		redirect.Register(rd, a.URL)
+		a.URL = rd
 	}
 
 	err = tmplPkg.Execute(w, argsTmplPkg{pkg, assets})

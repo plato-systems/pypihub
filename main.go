@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/plato-systems/pypihub/config"
+	"github.com/plato-systems/pypihub/redirect"
 	"github.com/plato-systems/pypihub/simple"
 )
 
@@ -22,6 +23,7 @@ func main() {
 	}
 
 	http.HandleFunc("/simple/", simple.HandleHTTP)
+	http.HandleFunc("/redirect/", redirect.HandleHTTP)
 
 	addr := fmt.Sprintf("%s:%d", config.Conf.Host, config.Conf.Port)
 	tls := config.Conf.TLS
