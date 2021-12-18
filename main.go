@@ -18,7 +18,7 @@ func main() {
 	if *configFile != "" {
 		err := config.LoadFile(*configFile)
 		if err != nil {
-			log.Fatal("load config: ", err)
+			log.Fatal("[fatal] load config: ", err)
 		}
 	}
 
@@ -26,6 +26,8 @@ func main() {
 	http.HandleFunc(redirect.BaseURLPath, redirect.HandleHTTP)
 
 	addr := fmt.Sprintf("%s:%d", config.Conf.Host, config.Conf.Port)
+	log.Println("[info] Welcome to PyPIHub! Starting on", addr)
+
 	tls := config.Conf.TLS
 	if tls.Cert == "" || tls.Key == "" {
 		log.Fatal(http.ListenAndServe(addr, nil))
