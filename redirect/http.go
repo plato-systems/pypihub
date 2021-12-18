@@ -1,13 +1,28 @@
+// Package redirect implements a multi-purpose caching redirect layer
 package redirect
 
-import "net/http"
+import (
+	"net/http"
+)
+
+const BaseURLPath = "/redirect/"
 
 func HandleHTTP(w http.ResponseWriter, r *http.Request) {
-	dest := table[r.URL.Path]
-	if dest == "" {
-		http.Error(w, "404 not found", http.StatusNotFound)
+	e := table[r.URL.Path[len(BaseURLPath):]]
+	if e == nil {
+		http.NotFound(w, r)
 		return
 	}
 
-	http.Redirect(w, r, dest, http.StatusTemporaryRedirect)
+	user, pass, ok := r.BasicAuth()
+	if !ok {
+		http.Error(w, "401 unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if user != e.user || pass != e.pass {
+		http.Error(w, "403 forbidden", http.StatusForbidden)
+		return
+	}
+
+	http.Redirect(w, r, e.dest, http.StatusTemporaryRedirect)
 }

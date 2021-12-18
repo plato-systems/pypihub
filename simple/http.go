@@ -1,3 +1,4 @@
+// Package simple implements the PEP 503 Simple Repository API
 package simple
 
 import (
@@ -9,18 +10,19 @@ import (
 	"github.com/plato-systems/pypihub/redirect"
 )
 
-var simpleRe = regexp.MustCompile("^/simple/([a-z0-9-]*)/?$")
+const BaseURLPath = "/simple/"
+
+var pathSpec = regexp.MustCompile("^" + BaseURLPath + "([a-z0-9-]*)/?$")
 
 func HandleHTTP(w http.ResponseWriter, r *http.Request) {
-	m := simpleRe.FindStringSubmatch(r.URL.Path)
+	path := r.URL.Path
+	m := pathSpec.FindStringSubmatch(path)
 	if m == nil {
 		http.NotFound(w, r)
 		return
 	}
-
-	urlpath, pkg := m[0], m[1]
-	if urlpath[len(urlpath)-1] != '/' {
-		http.Redirect(w, r, urlpath+"/", http.StatusMovedPermanently)
+	if path[len(path)-1] != '/' {
+		http.Redirect(w, r, path+"/", http.StatusMovedPermanently)
 		return
 	}
 
@@ -30,9 +32,10 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if pkg == "" {
+	pkg := m[1]
+	if pkg == "" { // GET /simple/
 		if err := tmplRoot.Execute(w, nil); err != nil {
-			log.Println(err)
+			log.Println("tmplRoot.Execute(): ", err)
 			error500(w)
 		}
 		return
@@ -42,23 +45,22 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 	for _, rep := range config.Conf.Replace {
 		repo = rep.Re.ReplaceAllString(repo, rep.Repl)
 	}
-	assets, err := getRepoAssets(token, owner, repo)
+
+	assets, err := repoGetAssets(token, owner, repo)
 	if err != nil {
-		log.Println(err)
-		error500(w)
+		log.Printf("repoGetAssets(%s/%s): %v", owner, repo, err)
+		http.NotFound(w, r)
 		return
 	}
 
 	for i := range assets {
 		a := &assets[i]
-		rd := "/redirect/" + a.Name
-		redirect.Register(rd, a.URL)
-		a.URL = rd
+		a.URL = redirect.Register(a.Name, a.URL, owner, token)
 	}
 
 	err = tmplPkg.Execute(w, argsTmplPkg{pkg, assets})
 	if err != nil {
-		log.Println(err)
+		log.Printf("tmplPkg.Execute(%s): %v", pkg, err)
 		error500(w)
 		return
 	}

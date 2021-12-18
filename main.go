@@ -18,12 +18,12 @@ func main() {
 	if *configFile != "" {
 		err := config.LoadFile(*configFile)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("load config: ", err)
 		}
 	}
 
-	http.HandleFunc("/simple/", simple.HandleHTTP)
-	http.HandleFunc("/redirect/", redirect.HandleHTTP)
+	http.HandleFunc(simple.BaseURLPath, simple.HandleHTTP)
+	http.HandleFunc(redirect.BaseURLPath, redirect.HandleHTTP)
 
 	addr := fmt.Sprintf("%s:%d", config.Conf.Host, config.Conf.Port)
 	tls := config.Conf.TLS
