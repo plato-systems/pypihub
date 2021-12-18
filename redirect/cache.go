@@ -1,13 +1,19 @@
 package redirect
 
 import (
+	"container/list"
 	"fmt"
-	"time"
+	"math/rand"
+	"sync"
 )
 
 const maxSize = 1024
 
-var table = map[string]*entry{}
+var (
+	table = map[string]*entry{}
+	fifo  = list.New()
+	lock  = sync.Mutex{}
+)
 
 type entry struct {
 	dest string
@@ -16,15 +22,17 @@ type entry struct {
 }
 
 func Register(src, dest, user, pass string) string {
+	lock.Lock()
+	defer lock.Unlock()
+
 	if len(table) == maxSize {
-		for k := range table {
-			delete(table, k)
-			break
-		}
+		k := fifo.Remove(fifo.Front())
+		delete(table, k.(string))
 	}
 
-	key := fmt.Sprintf("%x/%s", time.Now().UnixMilli(), src)
+	key := fmt.Sprintf("%x/%s", rand.Int(), src)
 	table[key] = &entry{dest, user, pass}
+	fifo.PushBack(key)
 
 	return BaseURLPath + key
 }
