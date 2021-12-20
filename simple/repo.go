@@ -7,7 +7,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func repoGetAssets(token, owner, repo string) ([]ghAsset, error) {
+func getRepoAssets(token, owner, repo string) ([]ghAsset, error) {
 	hc := oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))

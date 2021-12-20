@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/plato-systems/pypihub/asset"
 	"github.com/plato-systems/pypihub/config"
-	"github.com/plato-systems/pypihub/redirect"
 	"github.com/plato-systems/pypihub/simple"
 )
 
@@ -22,8 +22,8 @@ func main() {
 		}
 	}
 
-	http.HandleFunc(simple.BaseURLPath, simple.HandleHTTP)
-	http.HandleFunc(redirect.BaseURLPath, redirect.HandleHTTP)
+	http.HandleFunc(asset.BaseURLPath, asset.ServeHTTP)
+	http.HandleFunc(simple.BaseURLPath, simple.ServeHTTP)
 
 	addr := fmt.Sprintf("%s:%d", config.Conf.Host, config.Conf.Port)
 	log.Println("[info] Welcome to PyPIHub! Starting on", addr)

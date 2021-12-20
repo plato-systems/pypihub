@@ -1,12 +1,11 @@
 package simple
 
 type ghAsset struct {
+	ID   string
 	Name string
-	URL  string
 }
 
 type ghRelease struct {
-	Name          string
 	ReleaseAssets struct {
 		Nodes []ghAsset
 	} `graphql:"releaseAssets(first: 32)"`

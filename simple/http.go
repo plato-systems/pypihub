@@ -7,14 +7,13 @@ import (
 	"regexp"
 
 	"github.com/plato-systems/pypihub/config"
-	"github.com/plato-systems/pypihub/redirect"
 )
 
 const BaseURLPath = "/simple/"
 
-var pathSpec = regexp.MustCompile("^" + BaseURLPath + "([a-z0-9-]*)/?$")
+var pathSpec = regexp.MustCompile("^([a-z0-9-]*)/?$")
 
-func HandleHTTP(w http.ResponseWriter, r *http.Request) {
+func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	log.Println("[info]", r.Method, path)
 	if r.Method != http.MethodGet {
@@ -22,7 +21,7 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := pathSpec.FindStringSubmatch(path)
+	m := pathSpec.FindStringSubmatch(path[len(BaseURLPath):])
 	if m == nil {
 		http.NotFound(w, r)
 		return
@@ -52,16 +51,11 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 		repo = rep.Re.ReplaceAllString(repo, rep.Repl)
 	}
 
-	assets, err := repoGetAssets(token, owner, repo)
+	assets, err := getRepoAssets(token, owner, repo)
 	if err != nil {
-		log.Printf("[warn] repoGetAssets(%s/%s): %v", owner, repo, err)
+		log.Printf("[warn] getRepoAssets(%s/%s): %v", owner, repo, err)
 		http.NotFound(w, r)
 		return
-	}
-
-	for i := range assets {
-		a := &assets[i]
-		a.URL = redirect.Register(a.Name, a.URL, owner, token)
 	}
 
 	err = tmplPkg.Execute(w, argsTmplPkg{pkg, assets})
