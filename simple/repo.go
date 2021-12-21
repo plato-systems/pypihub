@@ -3,24 +3,23 @@ package simple
 import (
 	"context"
 
+	"github.com/plato-systems/pypihub/util"
 	"github.com/shurcooL/githubv4"
-	"golang.org/x/oauth2"
 )
 
-func getRepoAssets(token, owner, repo string) ([]ghAsset, error) {
-	hc := oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	))
-	client := githubv4.NewClient(hc)
+func getRepoAssets(
+	ctx context.Context, token, owner, repo string,
+) ([]ghAsset, error) {
+	client := util.NewGitHubv4Client(ctx, token)
 
-	var assets []ghAsset
+	assets := []ghAsset{}
 	q, v := queryRepo{}, map[string]interface{}{
 		"repoOwner": githubv4.String(owner),
 		"repoName":  githubv4.String(repo),
 		"cursor":    (*githubv4.String)(nil),
 	}
 	for {
-		err := client.Query(context.TODO(), &q, v)
+		err := client.Query(ctx, &q, v)
 		if err != nil {
 			return nil, err
 		}

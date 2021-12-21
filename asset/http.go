@@ -31,7 +31,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	url, err := getAssetURL(m[1], token)
+	url, err := getAssetURL(r.Context(), token, m[1])
 	if err != nil {
 		log.Printf("[warn] getAssetURL(%s): %v", m[0], err)
 		http.NotFound(w, r)

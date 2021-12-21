@@ -6,8 +6,7 @@ import (
 	"github.com/plato-systems/pypihub/asset"
 )
 
-var (
-	htmlRoot = `<!DOCTYPE html>
+const htmlRoot = `<!DOCTYPE html>
 <html>
 <head>
 	<title>PyPIHub: root</title>
@@ -18,7 +17,9 @@ var (
 </html>
 `
 
-	htmlPkg = `<!DOCTYPE html>
+var tmplPkg = template.Must(template.New("pkg").Funcs(template.FuncMap{
+	"assetURL": asset.MakeURL,
+}).Parse(`<!DOCTYPE html>
 <html>
 <head>
 	<title>PyPIHub: package {{.Name}}</title>
@@ -30,17 +31,9 @@ var (
 {{end}}
 </body>
 </html>
-`
-)
+`))
 
-var (
-	tmplRoot = template.Must(template.New("root").Parse(htmlRoot))
-	tmplPkg  = template.Must(template.New("pkg").Funcs(template.FuncMap{
-		"assetURL": asset.MakeURL,
-	}).Parse(htmlPkg))
-)
-
-type argsTmplPkg struct {
+type argsPkg struct {
 	Name   string
 	Assets []ghAsset
 }

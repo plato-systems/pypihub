@@ -3,8 +3,7 @@ package asset
 import (
 	"context"
 
-	"github.com/shurcooL/githubv4"
-	"golang.org/x/oauth2"
+	"github.com/plato-systems/pypihub/util"
 )
 
 type queryAsset struct {
@@ -15,16 +14,13 @@ type queryAsset struct {
 	} `graphql:"node(id: $assetID)"`
 }
 
-func getAssetURL(id, token string) (string, error) {
-	hc := oauth2.NewClient(context.TODO(), oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	))
-	client := githubv4.NewClient(hc)
+func getAssetURL(ctx context.Context, token, id string) (string, error) {
+	client := util.NewGitHubv4Client(ctx, token)
 
 	q, v := queryAsset{}, map[string]interface{}{
 		"assetID": id,
 	}
-	err := client.Query(context.TODO(), &q, v)
+	err := client.Query(ctx, &q, v)
 	if err != nil {
 		return "", err
 	}

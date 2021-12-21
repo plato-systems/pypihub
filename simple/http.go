@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/plato-systems/pypihub/config"
+	"github.com/plato-systems/pypihub/util"
 )
 
 const BaseURLPath = "/simple/"
@@ -39,33 +39,26 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	pkg := m[1]
 	if pkg == "" { // GET /simple/
-		if err := tmplRoot.Execute(w, nil); err != nil {
-			log.Println("[error] tmplRoot.Execute(): ", err)
-			error500(w)
-		}
+		w.Write([]byte(htmlRoot))
 		return
 	}
 
 	repo := pkg
-	for _, rep := range config.Conf.Replace {
+	for _, rep := range util.Config.Replace {
 		repo = rep.Re.ReplaceAllString(repo, rep.Repl)
 	}
 
-	assets, err := getRepoAssets(token, owner, repo)
+	assets, err := getRepoAssets(r.Context(), token, owner, repo)
 	if err != nil {
 		log.Printf("[warn] getRepoAssets(%s/%s): %v", owner, repo, err)
 		http.NotFound(w, r)
 		return
 	}
 
-	err = tmplPkg.Execute(w, argsTmplPkg{pkg, assets})
+	err = tmplPkg.Execute(w, argsPkg{pkg, assets})
 	if err != nil {
 		log.Printf("[error] tmplPkg.Execute(%s): %v", pkg, err)
-		error500(w)
+		http.Error(w, "500 internal server error", http.StatusInternalServerError)
 		return
 	}
-}
-
-func error500(w http.ResponseWriter) {
-	http.Error(w, "500 internal server error", http.StatusInternalServerError)
 }

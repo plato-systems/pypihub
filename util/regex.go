@@ -1,12 +1,12 @@
-package config
+package util
 
 import "regexp"
 
-type regex struct {
+type uRegexp struct {
 	*regexp.Regexp
 }
 
-func (r *regex) UnmarshalText(text []byte) error {
+func (r *uRegexp) UnmarshalText(text []byte) error {
 	re, err := regexp.Compile(string(text))
 	if err != nil {
 		return err
