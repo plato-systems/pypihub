@@ -17,7 +17,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	log.Println("[info]", r.Method, path)
 	if r.Method != http.MethodGet {
-		http.Error(w, "501 not implemented", http.StatusNotImplemented)
+		util.ErrorHTTP(w, http.StatusNotImplemented)
 		return
 	}
 
@@ -31,9 +31,9 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	owner, token, ok := r.BasicAuth()
+	owner, token, ok := util.AuthOwner(r)
 	if !ok {
-		http.Error(w, "401 unathorized", http.StatusUnauthorized)
+		util.ErrorHTTP(w, http.StatusUnauthorized)
 		return
 	}
 
@@ -58,7 +58,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	err = tmplPkg.Execute(w, argsPkg{pkg, assets})
 	if err != nil {
 		log.Printf("[error] tmplPkg.Execute(%s): %v", pkg, err)
-		http.Error(w, "500 internal server error", http.StatusInternalServerError)
+		util.ErrorHTTP(w, http.StatusInternalServerError)
 		return
 	}
 }

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"path"
 	"regexp"
+
+	"github.com/plato-systems/pypihub/util"
 )
 
 const BaseURLPath = "/asset/"
@@ -15,7 +17,7 @@ var pathSpec = regexp.MustCompile(`^([\w=]+)/[\w\.+-]+$`)
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("[info]", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
-		http.Error(w, "501 not implemented", http.StatusNotImplemented)
+		util.ErrorHTTP(w, http.StatusNotImplemented)
 		return
 	}
 
@@ -25,20 +27,25 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, token, ok := r.BasicAuth()
+	owner, token, ok := util.AuthOwner(r)
 	if !ok {
-		http.Error(w, "401 unathorized", http.StatusUnauthorized)
+		util.ErrorHTTP(w, http.StatusUnauthorized)
 		return
 	}
 
-	url, err := getAssetURL(r.Context(), token, m[1])
+	asset, err := getAsset(r.Context(), token, m[1])
 	if err != nil {
-		log.Printf("[warn] getAssetURL(%s): %v", m[0], err)
+		log.Printf("[warn] getAsset(%s): %v", m[0], err)
 		http.NotFound(w, r)
 		return
 	}
+	if asset.Release.Repository.Owner.Login != owner {
+		// TODO: logging for suspicious activity?
+		util.ErrorHTTP(w, http.StatusForbidden)
+		return
+	}
 
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, asset.URL, http.StatusTemporaryRedirect)
 }
 
 func MakeURL(id, filename string) string {

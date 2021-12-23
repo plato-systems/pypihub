@@ -15,25 +15,40 @@ var Config struct {
 		Key  string
 	}
 
+	Owners []string
+
 	Replace []struct {
 		Re   uRegexp
 		Repl string
 	}
 }
 
-func LoadConfig(filename string) error {
+func LoadConfigFile(filename string) error {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
-	return toml.Unmarshal(content, &Config)
+	return loadConfig(content)
 }
 
-var defaultConfig = []byte(`
+func loadConfig(text []byte) error {
+	if err := toml.Unmarshal(text, &Config); err != nil {
+		return err
+	}
+
+	authOwners = map[string]bool{}
+	for _, o := range Config.Owners {
+		authOwners[o] = true
+	}
+
+	return nil
+}
+
+const defaultConfig = `
 host = "0.0.0.0"
 port = 3141
-`)
+`
 
 func init() {
-	toml.Unmarshal(defaultConfig, &Config)
+	loadConfig([]byte(defaultConfig))
 }

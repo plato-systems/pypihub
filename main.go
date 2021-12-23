@@ -16,7 +16,7 @@ var configFile = flag.String("c", "", "PyPIHub config file")
 func main() {
 	flag.Parse()
 	if *configFile != "" {
-		err := util.LoadConfig(*configFile)
+		err := util.LoadConfigFile(*configFile)
 		if err != nil {
 			log.Fatal("[fatal] load config: ", err)
 		}

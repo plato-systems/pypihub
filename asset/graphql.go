@@ -8,22 +8,23 @@ import (
 
 type queryAsset struct {
 	Node struct {
-		ReleaseAsset struct {
-			URL string
-		} `graphql:"... on ReleaseAsset"`
+		ReleaseAsset ghAsset `graphql:"... on ReleaseAsset"`
 	} `graphql:"node(id: $assetID)"`
 }
 
-func getAssetURL(ctx context.Context, token, id string) (string, error) {
+type ghAsset struct {
+	URL     string
+	Release struct {
+		Repository struct {
+			Owner struct {
+				Login string
+			}
+		}
+	}
+}
+
+func getAsset(ctx context.Context, token, id string) (ghAsset, error) {
 	client := util.NewGitHubv4Client(ctx, token)
-
-	q, v := queryAsset{}, map[string]interface{}{
-		"assetID": id,
-	}
-	err := client.Query(ctx, &q, v)
-	if err != nil {
-		return "", err
-	}
-
-	return q.Node.ReleaseAsset.URL, nil
+	q, v := queryAsset{}, map[string]interface{}{"assetID": id}
+	return q.Node.ReleaseAsset, client.Query(ctx, &q, v)
 }

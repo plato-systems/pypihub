@@ -2,7 +2,7 @@
 Python Package Index backed by GitHub Releases
 
 ## Overview
-Coming soon!
+TODO: Coming soon!
 
 ## Installation
 From source:
@@ -17,4 +17,4 @@ pypihub -h
 ```
 
 ## Configuration
-Coming soon!
+TODO: Coming soon!
