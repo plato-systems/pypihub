@@ -9,10 +9,13 @@ import (
 	"github.com/plato-systems/pypihub/util"
 )
 
+// BaseURLPath is the endpoint of this service.
 const BaseURLPath = "/simple/"
 
 var pathSpec = regexp.MustCompile("^([a-z0-9-]*)/?$")
 
+// ServeHTTP lists downloadable files for requested Package
+// from Release Assets of its hosting Repo.
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	log.Println("[info]", r.Method, path)

@@ -10,10 +10,13 @@ import (
 	"github.com/plato-systems/pypihub/util"
 )
 
+// BaseURLPath is the endpoint of this service.
 const BaseURLPath = "/asset/"
 
 var pathSpec = regexp.MustCompile(`^([\w=]+)/[\w\.+-]+$`)
 
+// ServeHTTP redirects PEP-503-compliant file URLs to their temporary
+// download URLs.
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("[info]", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
@@ -48,6 +51,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, asset.URL, http.StatusTemporaryRedirect)
 }
 
+// MakeURL returns a redirect URL for the file with given ID and filename.
 func MakeURL(id, filename string) string {
 	return path.Join(BaseURLPath, id, filename)
 }

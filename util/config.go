@@ -1,4 +1,4 @@
-// Package util provides various utilities, including config
+// Package util provides various utilities, including config.
 package util
 
 import (
@@ -7,6 +7,7 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+// Config represents the global configuration of the server.
 var Config struct {
 	Server struct {
 		Host string
@@ -27,6 +28,8 @@ var Config struct {
 	}
 }
 
+// LoadConfigFile merges the given TOML configuration file into
+// the global configuration.
 func LoadConfigFile(filename string) error {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
