@@ -8,18 +8,22 @@ import (
 )
 
 var Config struct {
-	Host string
-	Port uint16
-	TLS  struct {
-		Cert string
-		Key  string
+	Server struct {
+		Host string
+		Port uint16
+		TLS  struct {
+			Crt string
+			Key string
+		}
 	}
 
-	Owners []string
+	GitHub struct {
+		Owners []string
 
-	Replace []struct {
-		Re   uRegexp
-		Repl string
+		Replace []struct {
+			Patt uRegexp
+			Repl string
+		}
 	}
 }
 
@@ -37,7 +41,7 @@ func loadConfig(text []byte) error {
 	}
 
 	authOwners = map[string]bool{}
-	for _, o := range Config.Owners {
+	for _, o := range Config.GitHub.Owners {
 		authOwners[o] = true
 	}
 
@@ -45,6 +49,7 @@ func loadConfig(text []byte) error {
 }
 
 const defaultConfig = `
+[server]
 host = "0.0.0.0"
 port = 3141
 `

@@ -44,8 +44,8 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repo := pkg
-	for _, rep := range util.Config.Replace {
-		repo = rep.Re.ReplaceAllString(repo, rep.Repl)
+	for _, rep := range util.Config.GitHub.Replace {
+		repo = rep.Patt.ReplaceAllString(repo, rep.Repl)
 	}
 
 	assets, err := getRepoAssets(r.Context(), token, owner, repo)

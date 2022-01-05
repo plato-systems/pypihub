@@ -25,12 +25,12 @@ func main() {
 	http.HandleFunc(asset.BaseURLPath, asset.ServeHTTP)
 	http.HandleFunc(simple.BaseURLPath, simple.ServeHTTP)
 
-	addr := fmt.Sprintf("%s:%d", util.Config.Host, util.Config.Port)
+	s := util.Config.Server
+	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
 	log.Println("[info] Welcome to PyPIHub! Starting on", addr)
 
-	tls := util.Config.TLS
-	if tls.Cert == "" || tls.Key == "" {
+	if s.TLS.Crt == "" || s.TLS.Key == "" {
 		log.Fatal(http.ListenAndServe(addr, nil))
 	}
-	log.Fatal(http.ListenAndServeTLS(addr, tls.Cert, tls.Key, nil))
+	log.Fatal(http.ListenAndServeTLS(addr, s.TLS.Crt, s.TLS.Key, nil))
 }
