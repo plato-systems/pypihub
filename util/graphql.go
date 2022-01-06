@@ -7,9 +7,22 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// NewGitHubv4Client creates a new GitHub GraphQL API client with the given
-// token as authorization.
-func NewGitHubv4Client(ctx context.Context, token string) *githubv4.Client {
+type APIClient interface {
+	Query(
+		ctx context.Context, q interface{},
+		variables map[string]interface{},
+	) error
+}
+
+type APIClientFactory interface {
+	New(ctx context.Context, token string) APIClient
+}
+
+type GitHubv4ClientFactory struct{}
+
+func (c GitHubv4ClientFactory) New(
+	ctx context.Context, token string,
+) APIClient {
 	hc := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
