@@ -1,4 +1,4 @@
-// Package asset implements PEP-503-compliant Release Assets redirects
+// Package asset implements PEP-503-compliant Release Assets redirects.
 package asset
 
 import (
@@ -47,10 +47,10 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, asset.URL, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, asset.URL, http.StatusFound)
 }
 
-// MakeURL returns a redirect URL for the file with given ID and filename.
+// MakeURL produces an artificial file URL for an Asset.
 func MakeURL(id, filename string) string {
 	return path.Join(BaseURLPath, id, filename)
 }

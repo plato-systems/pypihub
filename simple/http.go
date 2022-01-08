@@ -1,3 +1,4 @@
+// Package simple implements the PEP 503 Simple Repository API.
 package simple
 
 import (

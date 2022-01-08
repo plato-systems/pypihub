@@ -9,6 +9,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// NewGitHubv4Client constructs a GraphQL client with the appropriate backend.
 func NewGitHubv4Client(ctx context.Context, token string) *githubv4.Client {
 	var c *http.Client
 	if TestGitHubAPI == nil {
@@ -21,6 +22,7 @@ func NewGitHubv4Client(ctx context.Context, token string) *githubv4.Client {
 	return githubv4.NewClient(c)
 }
 
+// TestGitHubAPI is set in tests to mock the GitHub GraphQL API.
 var TestGitHubAPI http.HandlerFunc
 
 type testTripper struct{}
