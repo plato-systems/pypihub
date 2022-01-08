@@ -1,3 +1,4 @@
+// Package simple implements the PEP 503 Simple Repository API
 package simple
 
 import (
@@ -9,9 +10,9 @@ import (
 
 func getRepoAssets(
 	ctx context.Context,
-	client util.APIClient,
-	owner, repo string,
+	token, owner, repo string,
 ) ([]ghAsset, error) {
+	client := util.NewGitHubv4Client(ctx, token)
 	assets := []ghAsset{}
 	q, v := queryRepo{}, map[string]interface{}{
 		"repoOwner": githubv4.String(owner),

@@ -22,9 +22,8 @@ func main() {
 		}
 	}
 
-	gcf := util.GitHubv4ClientFactory{}
-	http.Handle(asset.BaseURLPath, asset.NewHandler(gcf))
-	http.Handle(simple.BaseURLPath, simple.NewHandler(gcf))
+	http.HandleFunc(asset.BaseURLPath, asset.ServeHTTP)
+	http.HandleFunc(simple.BaseURLPath, simple.ServeHTTP)
 
 	s := util.Config.Server
 	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
