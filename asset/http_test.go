@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"path"
 	"testing"
 
 	"github.com/plato-systems/pypihub/asset"
@@ -13,8 +12,8 @@ import (
 
 const (
 	user, pass = "octocat", "123"
-	id, file   = "Id123", "testpkg-1.2.3.tar.gz"
-	location   = "http://example.org/testpkg"
+	id, file   = "Id123", "octopack-1.2.3.tar.gz"
+	location   = "http://example.org/octopack"
 )
 
 func TestFound(t *testing.T) {
@@ -54,9 +53,22 @@ func TestNotFound(t *testing.T) {
 	}
 }
 
+func TestUnauth(t *testing.T) {
+	util.TestGitHubAPI = func(rw http.ResponseWriter, r *http.Request) {
+		t.Error("should not invoke GitHub API")
+		http.NotFound(rw, r)
+	}
+	req, rec := setup()
+
+	asset.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Error("wrong status code: ", rec.Code)
+	}
+}
+
 func setup() (*http.Request, *httptest.ResponseRecorder) {
 	return httptest.NewRequest(
-		http.MethodGet, path.Join(asset.BaseURLPath, id, file), nil,
+		http.MethodGet, asset.MakeURL(id, file), nil,
 	), httptest.NewRecorder()
 }
 
