@@ -30,8 +30,6 @@ type queryRepo struct {
 	} `graphql:"repository(owner: $repoOwner, name: $repoName)"`
 }
 
-type ghAPI struct{}
-
 // TODO: return more meaningful errors
 func (g ghAPI) getRepoAssets(
 	ctx context.Context,

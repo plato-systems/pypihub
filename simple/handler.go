@@ -16,6 +16,8 @@ type handler struct {
 	}
 }
 
+type ghAPI struct{}
+
 func HandleHTTP() {
 	http.Handle(pathBase, &handler{ghAPI{}})
 }
