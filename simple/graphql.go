@@ -32,6 +32,7 @@ type queryRepo struct {
 
 type ghAPI struct{}
 
+// TODO: return more meaningful errors
 func (g ghAPI) getRepoAssets(
 	ctx context.Context,
 	token, owner, repo string,

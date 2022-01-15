@@ -25,6 +25,7 @@ type ghAsset struct {
 
 type ghAPI struct{}
 
+// TODO: return more meaningful errors
 func (g ghAPI) getAsset(ctx context.Context, token, id string) (asset, error) {
 	client := util.NewGitHubv4Client(ctx, token)
 	q, v := queryAsset{}, map[string]interface{}{"assetID": id}
