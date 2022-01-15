@@ -1,6 +1,8 @@
-package simple_test
+package simple
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/plato-systems/pypihub/asset"
-	"github.com/plato-systems/pypihub/simple"
 	"github.com/plato-systems/pypihub/util"
 )
 
@@ -19,12 +20,17 @@ const (
 	pkg, repo  = "octopack", "test-repo"
 )
 
+var assets = []ghAsset{
+	{"Id0", pkg + "-1.1.1.tar.gz"},
+	{"Id1", pkg + "-1.2.0.tar.gz"},
+	{"Id2", pkg + "-1.2.0-py3-none-any.whl"},
+}
+
 func TestRoot(t *testing.T) {
-	util.TestGitHubAPI = makeUnreachableAPI(t)
 	req, rec := setup("")
 	req.SetBasicAuth(user, pass)
 
-	simple.ServeHTTP(rec, req)
+	makeNoreach(t).ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -40,11 +46,11 @@ func TestFoundRepo(t *testing.T) {
 
 func testFound(t *testing.T, pkg string) {
 	util.LoadConfigFile("./testdata/octo.toml")
-	util.TestGitHubAPI = makeFoundAPI(t)
 	req, rec := setup(pkg)
 	req.SetBasicAuth(user, pass)
 
-	simple.ServeHTTP(rec, req)
+	h := handler{mockAPI{assets: assets}}
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -57,7 +63,7 @@ func testFound(t *testing.T, pkg string) {
 	for _, a := range assets {
 		anchor := fmt.Sprintf(
 			`<a href="%s">%s</a>`,
-			asset.MakeURL(a.id, a.name), a.name,
+			asset.MakeURL(a.ID, a.Name), a.Name,
 		)
 		if !strings.Contains(body, anchor) {
 			t.Error("missing link:", anchor)
@@ -66,89 +72,44 @@ func testFound(t *testing.T, pkg string) {
 }
 
 func TestNotFound(t *testing.T) {
-	util.TestGitHubAPI = notFoundAPI
 	req, rec := setup(pkg)
 	req.SetBasicAuth(user, pass)
 
-	simple.ServeHTTP(rec, req)
+	h := handler{mockAPI{err: errors.New("not found")}}
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestUnauth(t *testing.T) {
-	util.TestGitHubAPI = makeUnreachableAPI(t)
 	req, rec := setup(pkg)
 
-	simple.ServeHTTP(rec, req)
+	makeNoreach(t).ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
-type ghAsset struct {
-	id, name string
-}
-
-var assets = []ghAsset{
-	{"Id0", pkg + "-1.1.1.tar.gz"},
-	{"Id1", pkg + "-1.2.0.tar.gz"},
-	{"Id2", pkg + "-1.2.0-py3-none-any.whl"},
-}
-
 func setup(pkg string) (*http.Request, *httptest.ResponseRecorder) {
 	return httptest.NewRequest(
-		http.MethodGet, path.Join(simple.BaseURLPath, pkg)+"/", nil,
+		http.MethodGet, path.Join(pathBase, pkg)+"/", nil,
 	), httptest.NewRecorder()
 }
 
-func makeUnreachableAPI(t *testing.T) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		t.Error("should not invoke GitHub API")
-		http.NotFound(rw, r)
-	}
+func makeNoreach(t *testing.T) *handler {
+	return &handler{mockAPI{noreach: t}}
 }
 
-func makeFoundAPI(t *testing.T) http.HandlerFunc {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		bodyBuf, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Error("could not read GraphQL query body: ", err)
-		} else {
-			body := string(bodyBuf)
-			if strings.Contains(body, pkg) || !strings.Contains(body, repo) {
-				t.Error("Package not converted to Repo in query: ", body)
-			}
-		}
-		fmt.Fprintf(
-			rw, `{ "data": { "repository": { "releases": {
-				"nodes": [
-					{ "releaseAssets": { "nodes": [] } },
-					{ "releaseAssets": { "nodes": [{
-						"id": "%s", "name": "%s"
-					}]}},
-					{ "releaseAssets": { "nodes": [
-						{ "id": "%s", "name": "%s" },
-						{ "id": "%s", "name": "%s" }
-					]}}
-				],
-				"pageInfo": { "endCursor": "c0", "hasNextPage": false }
-			}}}}`,
-			assets[0].id, assets[0].name,
-			assets[1].id, assets[1].name,
-			assets[2].id, assets[2].name,
-		)
-	}
+type mockAPI struct {
+	noreach *testing.T
+	assets  []ghAsset
+	err     error
 }
 
-func notFoundAPI(rw http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(rw, `{
-		"data": { "repository": null },
-		"errors": [{
-			"type": "NOT_FOUND",
-			"path": [ "repository" ],
-			"locations": [{ "line": 17, "column": 3 }],
-			"message": "Could not resolve to a Repository with the name '%s/%s'."
-		}]
-	}`, user, repo)
+func (m mockAPI) getRepoAssets(ctx context.Context, token, owner, repo string) ([]ghAsset, error) {
+	if m.noreach != nil {
+		m.noreach.Error("should not call API")
+	}
+	return m.assets, m.err
 }

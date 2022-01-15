@@ -1,4 +1,4 @@
-package asset_test
+package asset
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/plato-systems/pypihub/asset"
 	"github.com/plato-systems/pypihub/util"
 )
 
@@ -17,10 +16,10 @@ const (
 )
 
 func TestFound(t *testing.T) {
-	util.TestGitHubAPI = foundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
-	asset.ServeHTTP(rec, req)
+
+	found.ServeHTTP(rec, req)
 	res := rec.Result()
 
 	if res.StatusCode != http.StatusFound {
@@ -32,35 +31,35 @@ func TestFound(t *testing.T) {
 }
 
 func TestForbidden(t *testing.T) {
-	util.TestGitHubAPI = foundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user+"0", pass)
 
-	asset.ServeHTTP(rec, req)
+	found.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestNotFound(t *testing.T) {
-	util.TestGitHubAPI = notFoundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
 
-	asset.ServeHTTP(rec, req)
+	notFound.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestUnauth(t *testing.T) {
-	util.TestGitHubAPI = func(rw http.ResponseWriter, r *http.Request) {
-		t.Error("should not invoke GitHub API")
-		http.NotFound(rw, r)
-	}
 	req, rec := setup()
+	h := handler{util.NewGHv4ClientMaker(
+		func(rw http.ResponseWriter, r *http.Request) {
+			t.Error("should not invoke GitHub API")
+			http.NotFound(rw, r)
+		},
+	)}
 
-	asset.ServeHTTP(rec, req)
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -68,9 +67,14 @@ func TestUnauth(t *testing.T) {
 
 func setup() (*http.Request, *httptest.ResponseRecorder) {
 	return httptest.NewRequest(
-		http.MethodGet, asset.MakeURL(id, file), nil,
+		http.MethodGet, MakeURL(id, file), nil,
 	), httptest.NewRecorder()
 }
+
+var (
+	found    = handler{util.NewGHv4ClientMaker(foundAPI)}
+	notFound = handler{util.NewGHv4ClientMaker(notFoundAPI)}
+)
 
 func foundAPI(rw http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(rw, `{"data": {

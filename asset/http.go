@@ -5,25 +5,19 @@ import (
 	"log"
 	"net/http"
 	"path"
-	"regexp"
 
 	"github.com/plato-systems/pypihub/util"
 )
 
-// BaseURLPath is the endpoint of this service.
-const BaseURLPath = "/asset/"
-
-var pathSpec = regexp.MustCompile(`^([\w=]+)/[\w\.+-]+$`)
-
 // ServeHTTP redirects artificial file URLs to their temporary download URLs.
-func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("[info]", r.Method, r.URL.Path)
 	if r.Method != http.MethodGet {
 		util.ErrorHTTP(w, http.StatusNotImplemented)
 		return
 	}
 
-	m := pathSpec.FindStringSubmatch(r.URL.Path[len(BaseURLPath):])
+	m := pathSpec.FindStringSubmatch(r.URL.Path[len(pathBase):])
 	if m == nil {
 		http.NotFound(w, r)
 		return
@@ -35,22 +29,23 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	asset, err := getAsset(r.Context(), token, m[1])
+	client := h.makeGHClient(r.Context(), token)
+	a, err := getAsset(r.Context(), client, m[1])
 	if err != nil {
 		log.Printf("[warn] getAsset(%s): %v", m[0], err)
 		http.NotFound(w, r)
 		return
 	}
-	if asset.Release.Repository.Owner.Login != owner {
+	if a.Release.Repository.Owner.Login != owner {
 		// TODO: logging for suspicious activity?
 		util.ErrorHTTP(w, http.StatusForbidden)
 		return
 	}
 
-	http.Redirect(w, r, asset.URL, http.StatusFound)
+	http.Redirect(w, r, a.URL, http.StatusFound)
 }
 
 // MakeURL produces an artificial file URL for an Asset.
 func MakeURL(id, filename string) string {
-	return path.Join(BaseURLPath, id, filename)
+	return path.Join(pathBase, id, filename)
 }
