@@ -23,8 +23,11 @@ type ghAsset struct {
 	}
 }
 
-func getAsset(ctx context.Context, token, id string) (ghAsset, error) {
+type ghAPI struct{}
+
+func (g ghAPI) getAsset(ctx context.Context, token, id string) (asset, error) {
 	client := util.NewGitHubv4Client(ctx, token)
 	q, v := queryAsset{}, map[string]interface{}{"assetID": id}
-	return q.Node.ReleaseAsset, client.Query(ctx, &q, v)
+	a, err := q.Node.ReleaseAsset, client.Query(ctx, &q, v)
+	return asset{a.URL, a.Release.Repository.Owner.Login}, err
 }

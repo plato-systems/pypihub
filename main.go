@@ -22,7 +22,7 @@ func main() {
 		}
 	}
 
-	http.HandleFunc(asset.BaseURLPath, asset.ServeHTTP)
+	asset.HandleHTTP()
 	http.HandleFunc(simple.BaseURLPath, simple.ServeHTTP)
 
 	s := util.Config.Server

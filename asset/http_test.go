@@ -1,13 +1,11 @@
-package asset_test
+package asset
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/plato-systems/pypihub/asset"
-	"github.com/plato-systems/pypihub/util"
 )
 
 const (
@@ -16,13 +14,27 @@ const (
 	location   = "http://example.org/octopack"
 )
 
+type mockAPI struct {
+	noreach *testing.T
+	err     error
+	a       asset
+}
+
+func (m mockAPI) getAsset(ctx context.Context, token, id string) (asset, error) {
+	if m.noreach != nil {
+		m.noreach.Error("should not call API")
+	}
+	return m.a, m.err
+}
+
+var found = handler{mockAPI{a: asset{url: location, owner: user}}}
+
 func TestFound(t *testing.T) {
-	util.TestGitHubAPI = foundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
-	asset.ServeHTTP(rec, req)
-	res := rec.Result()
 
+	found.ServeHTTP(rec, req)
+	res := rec.Result()
 	if res.StatusCode != http.StatusFound {
 		t.Error("wrong status code: ", res.StatusCode)
 	}
@@ -32,35 +44,31 @@ func TestFound(t *testing.T) {
 }
 
 func TestForbidden(t *testing.T) {
-	util.TestGitHubAPI = foundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user+"0", pass)
 
-	asset.ServeHTTP(rec, req)
+	found.ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestNotFound(t *testing.T) {
-	util.TestGitHubAPI = notFoundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
 
-	asset.ServeHTTP(rec, req)
+	h := handler{mockAPI{err: errors.New("not found")}}
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestUnauth(t *testing.T) {
-	util.TestGitHubAPI = func(rw http.ResponseWriter, r *http.Request) {
-		t.Error("should not invoke GitHub API")
-		http.NotFound(rw, r)
-	}
 	req, rec := setup()
 
-	asset.ServeHTTP(rec, req)
+	h := handler{mockAPI{noreach: t}}
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -68,31 +76,6 @@ func TestUnauth(t *testing.T) {
 
 func setup() (*http.Request, *httptest.ResponseRecorder) {
 	return httptest.NewRequest(
-		http.MethodGet, asset.MakeURL(id, file), nil,
+		http.MethodGet, MakeURL(id, file), nil,
 	), httptest.NewRecorder()
-}
-
-func foundAPI(rw http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(rw, `{"data": {
-		"node": {
-			"url": "%s",
-			"release": { "repository": { "owner": {
-				"login": "%s"
-			}}}
-		}
-	}}`, location, user)
-}
-
-func notFoundAPI(rw http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(rw, `{
-		"data": {
-			"node": null
-		},
-		"errors": [{
-			"type": "NOT_FOUND",
-			"path": [ "node" ],
-			"locations": [{ "line": 2, "column": 3 }],
-			"message": "Could not resolve to a node with the global id of '%s'"
-		}]
-	}`, id)
 }
