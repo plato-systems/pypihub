@@ -1,13 +1,11 @@
-package asset_test
+package asset
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/plato-systems/pypihub/asset"
-	"github.com/plato-systems/pypihub/util"
 )
 
 const (
@@ -17,12 +15,11 @@ const (
 )
 
 func TestFound(t *testing.T) {
-	util.TestGitHubAPI = foundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
-	asset.ServeHTTP(rec, req)
-	res := rec.Result()
 
+	makeFound(t).ServeHTTP(rec, req)
+	res := rec.Result()
 	if res.StatusCode != http.StatusFound {
 		t.Error("wrong status code: ", res.StatusCode)
 	}
@@ -32,35 +29,31 @@ func TestFound(t *testing.T) {
 }
 
 func TestForbidden(t *testing.T) {
-	util.TestGitHubAPI = foundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user+"0", pass)
 
-	asset.ServeHTTP(rec, req)
+	makeFound(t).ServeHTTP(rec, req)
 	if rec.Code != http.StatusForbidden {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestNotFound(t *testing.T) {
-	util.TestGitHubAPI = notFoundAPI
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
 
-	asset.ServeHTTP(rec, req)
+	h := handler{mockClient{t: t, err: errors.New("not found")}}
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
 	}
 }
 
 func TestUnauth(t *testing.T) {
-	util.TestGitHubAPI = func(rw http.ResponseWriter, r *http.Request) {
-		t.Error("should not invoke GitHub API")
-		http.NotFound(rw, r)
-	}
 	req, rec := setup()
 
-	asset.ServeHTTP(rec, req)
+	h := handler{mockClient{t: t, noreach: true}}
+	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -68,31 +61,38 @@ func TestUnauth(t *testing.T) {
 
 func setup() (*http.Request, *httptest.ResponseRecorder) {
 	return httptest.NewRequest(
-		http.MethodGet, asset.MakeURL(id, file), nil,
+		http.MethodGet, MakeURL(id, file), nil,
 	), httptest.NewRecorder()
 }
 
-func foundAPI(rw http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(rw, `{"data": {
-		"node": {
-			"url": "%s",
-			"release": { "repository": { "owner": {
-				"login": "%s"
-			}}}
-		}
-	}}`, location, user)
+func makeFound(t *testing.T) *handler {
+	mc := mockClient{t: t, a: ghAsset{URL: location}}
+	mc.a.Release.Repository.Owner.Login = user
+	return &handler{mc}
 }
 
-func notFoundAPI(rw http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(rw, `{
-		"data": {
-			"node": null
-		},
-		"errors": [{
-			"type": "NOT_FOUND",
-			"path": [ "node" ],
-			"locations": [{ "line": 2, "column": 3 }],
-			"message": "Could not resolve to a node with the global id of '%s'"
-		}]
-	}`, id)
+type mockClient struct {
+	noreach bool
+	err     error
+	a       ghAsset
+	t       *testing.T
+}
+
+func (m mockClient) Query(
+	ctx context.Context, token string,
+	q interface{}, v map[string]interface{},
+) error {
+	if m.noreach {
+		m.t.Error("should not call API")
+		return m.err
+	}
+
+	query, ok := q.(*queryAsset)
+	if !ok {
+		m.t.Error("incorrect query type")
+		return m.err
+	}
+
+	query.Node.ReleaseAsset = m.a
+	return m.err
 }

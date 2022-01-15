@@ -4,19 +4,13 @@ package simple
 import (
 	"log"
 	"net/http"
-	"regexp"
 
 	"github.com/plato-systems/pypihub/util"
 )
 
-// BaseURLPath is the endpoint of this service.
-const BaseURLPath = "/simple/"
-
-var pathSpec = regexp.MustCompile("^([a-z0-9-]*)/?$")
-
 // ServeHTTP lists downloadable files for requested Package
 // from Release Assets of its hosting Repo.
-func ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 	log.Println("[info]", r.Method, path)
 	if r.Method != http.MethodGet {
@@ -24,7 +18,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := pathSpec.FindStringSubmatch(path[len(BaseURLPath):])
+	m := pathSpec.FindStringSubmatch(path[len(pathBase):])
 	if m == nil {
 		http.NotFound(w, r)
 		return
@@ -51,7 +45,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		repo = rep.Patt.ReplaceAllString(repo, rep.Repl)
 	}
 
-	assets, err := getRepoAssets(r.Context(), token, owner, repo)
+	assets, err := getRepoAssets(r.Context(), h.api, token, owner, repo)
 	if err != nil {
 		log.Printf("[warn] getRepoAssets(%s/%s): %v", owner, repo, err)
 		http.NotFound(w, r)

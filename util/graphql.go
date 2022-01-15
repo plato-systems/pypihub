@@ -2,35 +2,25 @@ package util
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 
 	"github.com/shurcooL/githubv4"
 	"golang.org/x/oauth2"
 )
 
-// NewGitHubv4Client constructs a GraphQL client with the appropriate backend.
-func NewGitHubv4Client(ctx context.Context, token string) *githubv4.Client {
-	var c *http.Client
-	if TestGitHubAPI == nil {
-		c = oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		))
-	} else {
-		c = &http.Client{Transport: &testTransport}
-	}
-	return githubv4.NewClient(c)
+type APIClient interface {
+	Query(
+		ctx context.Context, token string,
+		q interface{}, v map[string]interface{},
+	) error
 }
 
-// TestGitHubAPI is set in tests to mock the GitHub GraphQL API.
-var TestGitHubAPI http.HandlerFunc
+type GHv4Client struct{}
 
-type testTripper struct{}
-
-func (t *testTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	w := httptest.NewRecorder()
-	TestGitHubAPI(w, req)
-	return w.Result(), nil
+func (g GHv4Client) Query(
+	ctx context.Context, token string,
+	q interface{}, v map[string]interface{},
+) error {
+	return githubv4.NewClient(oauth2.NewClient(
+		ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
+	)).Query(ctx, q, v)
 }
-
-var testTransport testTripper

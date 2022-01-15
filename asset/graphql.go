@@ -23,8 +23,10 @@ type ghAsset struct {
 	}
 }
 
-func getAsset(ctx context.Context, token, id string) (ghAsset, error) {
-	client := util.NewGitHubv4Client(ctx, token)
+// TODO: return more meaningful errors
+func getAsset(
+	ctx context.Context, api util.APIClient, token, id string,
+) (ghAsset, error) {
 	q, v := queryAsset{}, map[string]interface{}{"assetID": id}
-	return q.Node.ReleaseAsset, client.Query(ctx, &q, v)
+	return q.Node.ReleaseAsset, api.Query(ctx, token, &q, v)
 }
