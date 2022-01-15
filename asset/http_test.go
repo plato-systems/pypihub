@@ -14,21 +14,6 @@ const (
 	location   = "http://example.org/octopack"
 )
 
-type mockAPI struct {
-	noreach *testing.T
-	err     error
-	a       asset
-}
-
-func (m mockAPI) getAsset(ctx context.Context, token, id string) (asset, error) {
-	if m.noreach != nil {
-		m.noreach.Error("should not call API")
-	}
-	return m.a, m.err
-}
-
-var found = handler{mockAPI{a: asset{url: location, owner: user}}}
-
 func TestFound(t *testing.T) {
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
@@ -78,4 +63,19 @@ func setup() (*http.Request, *httptest.ResponseRecorder) {
 	return httptest.NewRequest(
 		http.MethodGet, MakeURL(id, file), nil,
 	), httptest.NewRecorder()
+}
+
+var found = handler{mockAPI{a: asset{url: location, owner: user}}}
+
+type mockAPI struct {
+	noreach *testing.T
+	err     error
+	a       asset
+}
+
+func (m mockAPI) getAsset(ctx context.Context, token, id string) (asset, error) {
+	if m.noreach != nil {
+		m.noreach.Error("should not call API")
+	}
+	return m.a, m.err
 }

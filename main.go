@@ -23,7 +23,7 @@ func main() {
 	}
 
 	asset.HandleHTTP()
-	http.HandleFunc(simple.BaseURLPath, simple.ServeHTTP)
+	simple.HandleHTTP()
 
 	s := util.Config.Server
 	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
