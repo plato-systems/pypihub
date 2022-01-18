@@ -29,7 +29,7 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := h.makeGHClient(r.Context(), token)
+	client := h.makeGHv4Client(r.Context(), token)
 	a, err := getAsset(r.Context(), client, m[1])
 	if err != nil {
 		log.Printf("[warn] getAsset(%s): %v", m[0], err)

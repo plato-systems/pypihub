@@ -1,8 +1,6 @@
 package simple
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,7 +28,7 @@ func TestRoot(t *testing.T) {
 	req, rec := setup("")
 	req.SetBasicAuth(user, pass)
 
-	makeNoreach(t).ServeHTTP(rec, req)
+	wraph(makeUnreachableAPI(t)).ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -49,8 +47,7 @@ func testFound(t *testing.T, pkg string) {
 	req, rec := setup(pkg)
 	req.SetBasicAuth(user, pass)
 
-	h := handler{mockAPI{assets: assets}}
-	h.ServeHTTP(rec, req)
+	wraph(makeFoundAPI(t)).ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -75,8 +72,7 @@ func TestNotFound(t *testing.T) {
 	req, rec := setup(pkg)
 	req.SetBasicAuth(user, pass)
 
-	h := handler{mockAPI{err: errors.New("not found")}}
-	h.ServeHTTP(rec, req)
+	wraph(notFoundAPI).ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -85,7 +81,7 @@ func TestNotFound(t *testing.T) {
 func TestUnauth(t *testing.T) {
 	req, rec := setup(pkg)
 
-	makeNoreach(t).ServeHTTP(rec, req)
+	wraph(makeUnreachableAPI(t)).ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -97,19 +93,57 @@ func setup(pkg string) (*http.Request, *httptest.ResponseRecorder) {
 	), httptest.NewRecorder()
 }
 
-func makeNoreach(t *testing.T) *handler {
-	return &handler{mockAPI{noreach: t}}
+func wraph(serve http.HandlerFunc) http.Handler {
+	return &handler{util.NewGHv4ClientMaker(serve)}
 }
 
-type mockAPI struct {
-	noreach *testing.T
-	assets  []ghAsset
-	err     error
-}
-
-func (m mockAPI) getRepoAssets(ctx context.Context, token, owner, repo string) ([]ghAsset, error) {
-	if m.noreach != nil {
-		m.noreach.Error("should not call API")
+func makeUnreachableAPI(t *testing.T) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		t.Error("should not invoke GitHub API")
+		http.NotFound(rw, r)
 	}
-	return m.assets, m.err
+}
+
+func makeFoundAPI(t *testing.T) http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		bodyBuf, err := io.ReadAll(r.Body)
+		if err != nil {
+			t.Error("could not read GraphQL query body: ", err)
+		} else {
+			body := string(bodyBuf)
+			if strings.Contains(body, pkg) || !strings.Contains(body, repo) {
+				t.Error("Package not converted to Repo in query: ", body)
+			}
+		}
+		fmt.Fprintf(
+			rw, `{ "data": { "repository": { "releases": {
+				"nodes": [
+					{ "releaseAssets": { "nodes": [] } },
+					{ "releaseAssets": { "nodes": [{
+						"id": "%s", "name": "%s"
+					}]}},
+					{ "releaseAssets": { "nodes": [
+						{ "id": "%s", "name": "%s" },
+						{ "id": "%s", "name": "%s" }
+					]}}
+				],
+				"pageInfo": { "endCursor": "c0", "hasNextPage": false }
+			}}}}`,
+			assets[0].ID, assets[0].Name,
+			assets[1].ID, assets[1].Name,
+			assets[2].ID, assets[2].Name,
+		)
+	}
+}
+
+func notFoundAPI(rw http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(rw, `{
+		"data": { "repository": null },
+		"errors": [{
+			"type": "NOT_FOUND",
+			"path": [ "repository" ],
+			"locations": [{ "line": 17, "column": 3 }],
+			"message": "Could not resolve to a Repository with the name '%s/%s'."
+		}]
+	}`, user, repo)
 }

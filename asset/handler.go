@@ -12,7 +12,7 @@ const pathBase = "/asset/"
 var pathSpec = regexp.MustCompile(`^([\w=]+)/[\w\.+-]+$`)
 
 type handler struct {
-	makeGHClient util.GHv4ClientMaker
+	makeGHv4Client util.GHv4ClientMaker
 }
 
 func HandleHTTP() {

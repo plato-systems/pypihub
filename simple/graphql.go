@@ -3,7 +3,6 @@ package simple
 import (
 	"context"
 
-	"github.com/plato-systems/pypihub/util"
 	"github.com/shurcooL/githubv4"
 )
 
@@ -31,11 +30,11 @@ type queryRepo struct {
 }
 
 // TODO: return more meaningful errors
-func (g ghAPI) getRepoAssets(
+func getRepoAssets(
 	ctx context.Context,
-	token, owner, repo string,
+	client *githubv4.Client,
+	owner, repo string,
 ) ([]ghAsset, error) {
-	client := util.NewGHv4Client(ctx, token)
 	assets := []ghAsset{}
 	q, v := queryRepo{}, map[string]interface{}{
 		"repoOwner": githubv4.String(owner),

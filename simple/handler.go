@@ -1,9 +1,10 @@
 package simple
 
 import (
-	"context"
 	"net/http"
 	"regexp"
+
+	"github.com/plato-systems/pypihub/util"
 )
 
 const pathBase = "/simple/"
@@ -11,13 +12,9 @@ const pathBase = "/simple/"
 var pathSpec = regexp.MustCompile("^([a-z0-9-]*)/?$")
 
 type handler struct {
-	api interface {
-		getRepoAssets(ctx context.Context, token, owner, repo string) ([]ghAsset, error)
-	}
+	makeGHv4Client util.GHv4ClientMaker
 }
 
-type ghAPI struct{}
-
 func HandleHTTP() {
-	http.Handle(pathBase, &handler{ghAPI{}})
+	http.Handle(pathBase, &handler{util.NewGHv4Client})
 }
