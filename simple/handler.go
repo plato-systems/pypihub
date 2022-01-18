@@ -1,3 +1,4 @@
+// Package simple implements the PEP 503 Simple Repository API.
 package simple
 
 import (
@@ -15,6 +16,7 @@ type handler struct {
 	makeGHv4Client util.GHv4ClientMaker
 }
 
+// HandleHTTP registers the Simple Repository API service in http.DefaultServeMux.
 func HandleHTTP() {
 	http.Handle(pathBase, &handler{util.NewGHv4Client})
 }

@@ -1,4 +1,3 @@
-// Package asset implements PEP-503-compliant Release Assets redirects.
 package asset
 
 import (
