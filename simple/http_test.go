@@ -16,6 +16,7 @@ import (
 const (
 	user, pass = "octocat", "123"
 	pkg, repo  = "octopack", "test-repo"
+	cursor     = "c0"
 )
 
 var assets = []ghAsset{
@@ -106,32 +107,39 @@ func makeUnreachableAPI(t *testing.T) http.HandlerFunc {
 
 func makeFoundAPI(t *testing.T) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		page2 := false
 		bodyBuf, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Error("could not read GraphQL query body: ", err)
 		} else {
 			body := string(bodyBuf)
+			page2 = strings.Contains(body, cursor)
 			if strings.Contains(body, pkg) || !strings.Contains(body, repo) {
 				t.Error("Package not converted to Repo in query: ", body)
 			}
+		}
+		if page2 {
+			fmt.Fprintf(rw, `{ "data": { "repository": { "releases": {
+				"nodes": [{ "releaseAssets": { "nodes": [
+					{ "id": "%s", "name": "%s" }
+				]}}],
+				"pageInfo": { "endCursor": "%s", "hasNextPage": false }
+			}}}}`, assets[2].ID, assets[2].Name, cursor+"0")
+			return
 		}
 		fmt.Fprintf(
 			rw, `{ "data": { "repository": { "releases": {
 				"nodes": [
 					{ "releaseAssets": { "nodes": [] } },
-					{ "releaseAssets": { "nodes": [{
-						"id": "%s", "name": "%s"
-					}]}},
 					{ "releaseAssets": { "nodes": [
 						{ "id": "%s", "name": "%s" },
 						{ "id": "%s", "name": "%s" }
 					]}}
 				],
-				"pageInfo": { "endCursor": "c0", "hasNextPage": false }
+				"pageInfo": { "endCursor": "%s", "hasNextPage": true }
 			}}}}`,
 			assets[0].ID, assets[0].Name,
-			assets[1].ID, assets[1].Name,
-			assets[2].ID, assets[2].Name,
+			assets[1].ID, assets[1].Name, cursor,
 		)
 	}
 }
