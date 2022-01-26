@@ -7,6 +7,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// APIClient represents a GraphQL client with per-call authentication.
 type APIClient interface {
 	Query(
 		ctx context.Context, token string,
@@ -14,6 +15,7 @@ type APIClient interface {
 	) error
 }
 
+// GHv4Client is an APIClient exposing GitHub's GraphQL API.
 type GHv4Client struct{}
 
 func (g GHv4Client) Query(

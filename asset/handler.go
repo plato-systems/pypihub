@@ -16,6 +16,7 @@ type handler struct {
 	api util.APIClient
 }
 
+// HandleHTTP registers the Asset redirect service in http.DefaultServeMux.
 func HandleHTTP() {
 	http.Handle(pathBase, &handler{util.GHv4Client{}})
 }
