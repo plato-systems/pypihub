@@ -13,10 +13,10 @@ const pathBase = "/asset/"
 var pathSpec = regexp.MustCompile(`^([\w=]+)/[\w\.+-]+$`)
 
 type handler struct {
-	api util.APIClient
+	makeGHv4Client util.GHv4ClientMaker
 }
 
 // HandleHTTP registers the Asset redirect service in http.DefaultServeMux.
 func HandleHTTP() {
-	http.Handle(pathBase, &handler{util.GHv4Client{}})
+	http.Handle(pathBase, &handler{util.NewGHv4Client})
 }

@@ -52,8 +52,7 @@ func testFound(t *testing.T, pkg string) {
 	req, rec := setup(pkg)
 	req.SetBasicAuth(user, pass)
 
-	h := handler{mockClient{t: t, assets: assets}}
-	h.ServeHTTP(rec, req)
+	wraph(mockClient{t: t, assets: assets}).ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -78,7 +77,7 @@ func TestNotFound(t *testing.T) {
 	req, rec := setup(pkg)
 	req.SetBasicAuth(user, pass)
 
-	h := handler{mockClient{t: t, err: errors.New("not found")}}
+	h := wraph(mockClient{t: t, err: errors.New("not found")})
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
@@ -101,7 +100,13 @@ func setup(pkg string) (*http.Request, *httptest.ResponseRecorder) {
 }
 
 func makeNoreach(t *testing.T) *handler {
-	return &handler{mockClient{t: t, noreach: true}}
+	return wraph(mockClient{t: t, noreach: true})
+}
+
+func wraph(mc mockClient) *handler {
+	return &handler{func(context.Context, string) util.GHv4Client {
+		return mc
+	}}
 }
 
 type mockClient struct {
@@ -112,7 +117,7 @@ type mockClient struct {
 }
 
 func (m mockClient) Query(
-	ctx context.Context, token string,
+	ctx context.Context,
 	q interface{}, v map[string]interface{},
 ) error {
 	if m.noreach {

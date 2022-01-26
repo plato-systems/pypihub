@@ -32,8 +32,8 @@ type queryRepo struct {
 
 // TODO: return more meaningful errors
 func getRepoAssets(
-	ctx context.Context, api util.APIClient,
-	token, owner, repo string,
+	ctx context.Context, client util.GHv4Client,
+	owner, repo string,
 ) ([]ghAsset, error) {
 	assets := []ghAsset{}
 	q, v := queryRepo{}, map[string]interface{}{
@@ -42,7 +42,7 @@ func getRepoAssets(
 		"cursor":    (*githubv4.String)(nil),
 	}
 	for {
-		err := api.Query(ctx, token, &q, v)
+		err := client.Query(ctx, &q, v)
 		if err != nil {
 			return nil, err
 		}

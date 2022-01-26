@@ -8,6 +8,7 @@ import (
 )
 
 // Config represents the global configuration of the server.
+// TODO: refactor out global variable?
 var Config struct {
 	Server struct {
 		Host string

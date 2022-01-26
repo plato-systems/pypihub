@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/plato-systems/pypihub/util"
 )
 
 const (
@@ -42,7 +44,7 @@ func TestNotFound(t *testing.T) {
 	req, rec := setup()
 	req.SetBasicAuth(user, pass)
 
-	h := handler{mockClient{t: t, err: errors.New("not found")}}
+	h := wraph(mockClient{t: t, err: errors.New("not found")})
 	h.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Error("wrong status code: ", rec.Code)
@@ -52,8 +54,7 @@ func TestNotFound(t *testing.T) {
 func TestUnauth(t *testing.T) {
 	req, rec := setup()
 
-	h := handler{mockClient{t: t, noreach: true}}
-	h.ServeHTTP(rec, req)
+	wraph(mockClient{t: t, noreach: true}).ServeHTTP(rec, req)
 	if rec.Code != http.StatusUnauthorized {
 		t.Error("wrong status code: ", rec.Code)
 	}
@@ -68,7 +69,13 @@ func setup() (*http.Request, *httptest.ResponseRecorder) {
 func makeFound(t *testing.T) *handler {
 	mc := mockClient{t: t, a: ghAsset{URL: location}}
 	mc.a.Release.Repository.Owner.Login = user
-	return &handler{mc}
+	return wraph(mc)
+}
+
+func wraph(mc mockClient) *handler {
+	return &handler{func(context.Context, string) util.GHv4Client {
+		return mc
+	}}
 }
 
 type mockClient struct {
@@ -79,7 +86,7 @@ type mockClient struct {
 }
 
 func (m mockClient) Query(
-	ctx context.Context, token string,
+	ctx context.Context,
 	q interface{}, v map[string]interface{},
 ) error {
 	if m.noreach {

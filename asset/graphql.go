@@ -25,8 +25,8 @@ type ghAsset struct {
 
 // TODO: return more meaningful errors
 func getAsset(
-	ctx context.Context, api util.APIClient, token, id string,
+	ctx context.Context, client util.GHv4Client, id string,
 ) (ghAsset, error) {
 	q, v := queryAsset{}, map[string]interface{}{"assetID": id}
-	return q.Node.ReleaseAsset, api.Query(ctx, token, &q, v)
+	return q.Node.ReleaseAsset, client.Query(ctx, &q, v)
 }

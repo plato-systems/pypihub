@@ -28,7 +28,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a, err := getAsset(r.Context(), h.api, token, m[1])
+	client := h.makeGHv4Client(r.Context(), token)
+	a, err := getAsset(r.Context(), client, m[1])
 	if err != nil {
 		log.Printf("[warn] getAsset(%s): %v", m[0], err)
 		http.NotFound(w, r)

@@ -44,7 +44,8 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		repo = rep.Patt.ReplaceAllString(repo, rep.Repl)
 	}
 
-	assets, err := getRepoAssets(r.Context(), h.api, token, owner, repo)
+	client := h.makeGHv4Client(r.Context(), token)
+	assets, err := getRepoAssets(r.Context(), client, owner, repo)
 	if err != nil {
 		log.Printf("[warn] getRepoAssets(%s/%s): %v", owner, repo, err)
 		http.NotFound(w, r)
