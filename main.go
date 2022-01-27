@@ -22,8 +22,8 @@ func main() {
 		}
 	}
 
-	http.HandleFunc(asset.BaseURLPath, asset.ServeHTTP)
-	http.HandleFunc(simple.BaseURLPath, simple.ServeHTTP)
+	asset.HandleHTTP()
+	simple.HandleHTTP()
 
 	s := util.Config.Server
 	addr := fmt.Sprintf("%s:%d", s.Host, s.Port)
