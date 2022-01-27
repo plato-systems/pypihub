@@ -45,19 +45,10 @@ func verifyBody(t *testing.T, body io.ReadCloser) {
 		return
 	}
 
-	m := util.MatchGQLParam("node", "id", q.Query)
-	if m == nil {
+	assetID, err := util.MatchGQLParam("node", "id", q)
+	if err != nil {
 		t.Error("wrong GraphQL query:", q.Query)
 		return
-	}
-
-	assetID, ok := m[2], false
-	if m[1] != "" { // variable
-		assetID, ok = q.Variables[m[1]].(string)
-		if !ok {
-			t.Error("wrong GraphQL variable type")
-			return
-		}
 	}
 	if assetID != id {
 		t.Error("wrong asset id:", assetID)

@@ -61,26 +61,13 @@ func verifyBody(t *testing.T, body io.ReadCloser) (page int) {
 		t.Error("invalid GraphQL request body:", string(bb))
 		return
 	}
-	om := util.MatchGQLParam("repository", "owner", q.Query)
-	nm := util.MatchGQLParam("repository", "name", q.Query)
-	cm := util.MatchGQLParam("releases", "after", q.Query)
-	if om == nil || nm == nil || cm == nil {
+
+	owner, oerr := util.MatchGQLParam("repository", "owner", q)
+	name, nerr := util.MatchGQLParam("repository", "name", q)
+	cur, cerr := util.MatchGQLParam("releases", "after", q)
+	if oerr != nil || nerr != nil {
 		t.Error("wrong GraphQL query:", q.Query)
 		return
-	}
-
-	owner, name, cur, ok := om[2], nm[2], cm[2], false
-	if om[1] != "" {
-		owner, ok = q.Variables[om[1]].(string)
-		if !ok {
-			t.Error("wrong GraphQL variable type")
-		}
-	}
-	if nm[1] != "" {
-		name, ok = q.Variables[nm[1]].(string)
-		if !ok {
-			t.Error("wrong GraphQL variable type")
-		}
 	}
 	if owner != user {
 		t.Error("wrong repo owner:", owner)
@@ -89,11 +76,8 @@ func verifyBody(t *testing.T, body io.ReadCloser) (page int) {
 		t.Error("wrong repo name:", name)
 	}
 
-	if cm[1] != "" {
-		cur, ok = q.Variables[cm[1]].(string)
-		if !ok {
-			return
-		}
+	if cerr != nil {
+		return
 	}
 	if !strings.HasPrefix(cur, cursor) {
 		t.Error("invalid cursor:", cur)

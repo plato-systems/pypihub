@@ -30,6 +30,7 @@ func (t testTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // NewGHv4ClientMaker provides tests a way to mock the GitHub GraphQL API.
+// TODO: validate token
 func NewGHv4ClientMaker(serve http.HandlerFunc) GHv4ClientMaker {
 	c := githubv4.NewClient(&http.Client{Transport: testTripper{serve}})
 	return func(context.Context, string) *githubv4.Client {
