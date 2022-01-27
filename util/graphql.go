@@ -9,10 +9,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
-// GHv4ClientMaker describes how to create GitHub GraphQL APIs clients.
+// GHv4ClientMaker describes how to create GitHub GraphQL API clients.
 type GHv4ClientMaker func(ctx context.Context, token string) *githubv4.Client
 
-// NewGHv4Client constructs a GitHub GraphQL API client.
+// NewGHv4Client constructs a production GitHub GraphQL API client.
 func NewGHv4Client(ctx context.Context, token string) *githubv4.Client {
 	return githubv4.NewClient(oauth2.NewClient(
 		ctx, oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}),
@@ -35,4 +35,10 @@ func NewGHv4ClientMaker(serve http.HandlerFunc) GHv4ClientMaker {
 	return func(context.Context, string) *githubv4.Client {
 		return c
 	}
+}
+
+// GraphQLRequest is used for unmarshalled GraphQL JSON request bodies.
+type GraphQLRequest struct {
+	Query     string
+	Variables map[string]interface{}
 }
