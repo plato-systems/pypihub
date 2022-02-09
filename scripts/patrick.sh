@@ -1,12 +1,24 @@
 #!/bin/bash
+# =======
+# patrick
+# =======
+# Tool for managing GitHub PATs
+# Encrypts, stores, and decrypts one PAT per ssh-agent
+#
+# Uses the (slightly modified) ssh-crypt function from Wout Mertens; thanks!
+# Can invoke ssh-crypt using `./patrick.sh ssh-crypt <ssh-crypt options>`
+#
+# Requires an existing connection to an ssh-agent
+# No additional dependencies (beyond ssh-crypt's)
+#
 set -e
 cpk="$CRYPT_PUBKEY"
 
-## ssh-crypt.bash
+## ssh-crypt.bash (modified)
 # ssh-crypt
 #
 # Bash function to encrypt/decrypt with your ssh-agent private key.
-# Requires the commands gzip, ssh-add, ssh-keygen and openssl.
+# Requires the commands ssh-add, ssh-keygen and openssl.
 #
 # Uses bash-specific extensions like <<<$var to securely pass data.
 #
@@ -87,7 +99,7 @@ if [ -z "$CRYPT_PUBKEY" ]; then
 	echo "$0: no non-ecdsa ssh key found" >&2
 	exit 1
 fi
-sshid=$(sha1sum <<<$CRYPT_PUBKEY | head -c 30)
+sshid=$(openssl dgst -md5 -r <<<$CRYPT_PUBKEY | head -c 32)
 
 patdir="$HOME/.config/patrick"
 [ -d $patdir ] || mkdir -p $patdir
