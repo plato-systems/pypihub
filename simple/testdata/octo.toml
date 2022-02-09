@@ -1,0 +1,7 @@
+[[github.replace]]
+patt = "^octo"
+repl = ""
+
+[[github.replace]]
+patt = "^pack$"
+repl = "test-repo"

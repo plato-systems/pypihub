@@ -3,7 +3,7 @@ package asset
 import (
 	"context"
 
-	"github.com/plato-systems/pypihub/util"
+	"github.com/shurcooL/githubv4"
 )
 
 type queryAsset struct {
@@ -23,8 +23,10 @@ type ghAsset struct {
 	}
 }
 
-func getAsset(ctx context.Context, token, id string) (ghAsset, error) {
-	client := util.NewGitHubv4Client(ctx, token)
+// TODO: return more meaningful errors
+func getAsset(
+	ctx context.Context, client *githubv4.Client, id string,
+) (ghAsset, error) {
 	q, v := queryAsset{}, map[string]interface{}{"assetID": id}
 	return q.Node.ReleaseAsset, client.Query(ctx, &q, v)
 }
