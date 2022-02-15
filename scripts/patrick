@@ -4,11 +4,12 @@
 # =======
 # Tool for managing GitHub PATs
 # Encrypts, stores, and decrypts one PAT per ssh-agent
+# Requires an existing connection to an ssh-agent
 #
 # Uses the (slightly modified) ssh-crypt function from Wout Mertens; thanks!
-# Can invoke ssh-crypt using `./patrick.sh ssh-crypt <ssh-crypt options>`
+# Can invoke ssh-crypt using `./patrick ssh-crypt <ssh-crypt options>`
 #
-# Requires an existing connection to an ssh-agent
+# To install, download this file to your PATH and set the execute bit
 # No additional dependencies (beyond ssh-crypt's)
 #
 set -e
@@ -65,7 +66,7 @@ ssh-crypt() {
 		read pk <<<"$keys"
 	fi
 	if [ -z "$pk" ]; then
-		echo "!!! Could not select a public key to use - verify ssh-add -L"
+		echo "!!! Could not select a public key to use - verify ssh-add -L" >&2
 		return 1
 	fi
 
