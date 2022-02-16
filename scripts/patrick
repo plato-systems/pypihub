@@ -107,13 +107,13 @@ patdir="$HOME/.config/patrick"
 
 case $1 in
 -h | --help)
-    echo "usage: $0 [-d | ssh-crypt <...>]"
-    exit
-    ;;
+	echo "usage: $0 [-d | ssh-crypt <...>]"
+	exit
+	;;
 -d)
-    ssh-crypt -d <"$patdir/$sshid"
-    exit
-    ;;
+	ssh-crypt -d <"$patdir/$sshid"
+	exit
+	;;
 ssh-crypt)
 	shift
 	CRYPT_PUBKEY="$cpk" ssh-crypt $@
