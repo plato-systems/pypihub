@@ -4,15 +4,19 @@
 # =======
 # Tool for managing GitHub PATs
 # Encrypts, stores, and decrypts one PAT per ssh-agent
-# Requires an existing connection to an ssh-agent
+# Requires OpenSSH v8.1+ and an existing connection to an ssh-agent
 #
 # Uses the (slightly modified) ssh-crypt function from Wout Mertens; thanks!
-# Can invoke ssh-crypt using `./patrick ssh-crypt <ssh-crypt options>`
+# Can invoke ssh-crypt using `patrick ssh-crypt <ssh-crypt options>`
 #
 # To install, download this file to your PATH and set the execute bit
 # No additional dependencies (beyond ssh-crypt's)
 #
+# If Leigh McCulloch's 4d63.com/sshcrypt tools for ssh-agent are installed
+# in PATH, will use those instead of ssh-crypt.bash
+#
 set -e
+exe=$(basename $0)
 cpk="$CRYPT_PUBKEY"
 
 ## ssh-crypt.bash (modified)
@@ -72,7 +76,7 @@ ssh-crypt() {
 
 	# === Generate secret
 	# We pass the pubkey as a file so ssh-keygen will look up the private key in the agent
-	local secretText=$(ssh-keygen -Y sign -n hi -q -f /dev/fd/4 4<<<"$pk" <<<"$2")
+	local secretText=$(ssh-keygen -Y sign -n pat -q -f /dev/fd/4 4<<<"$pk" <<<"$2")
 	if [ $? -ne 0 ] || [ -z "$secretText" ]; then
 		echo "!!! Cannot generate secret, is ssh-agent available?" >&2
 		return 1
@@ -95,9 +99,18 @@ ssh-crypt() {
 }
 ## ssh-crypt.bash
 
+enc_cmd="ssh-crypt -e"
+dec_cmd="ssh-crypt -d"
+if command -v sshcrypt-agent-encrypt >/dev/null \
+	&& command -v sshcrypt-agent-decrypt >/dev/null
+then
+	enc_cmd="sshcrypt-agent-encrypt"
+	dec_cmd="sshcrypt-agent-decrypt"
+fi
+
 export CRYPT_PUBKEY=$(ssh-add -L | grep -vi ecdsa | head -1)
 if [ -z "$CRYPT_PUBKEY" ]; then
-	echo "$0: no non-ecdsa ssh key found" >&2
+	echo "$exe: no non-ecdsa ssh key found" >&2
 	exit 1
 fi
 sshid=$(openssl dgst -md5 -r <<<$CRYPT_PUBKEY | head -c 32)
@@ -107,11 +120,11 @@ patdir="$HOME/.config/patrick"
 
 case $1 in
 -h | --help)
-	echo "usage: $0 [-d | ssh-crypt <...>]"
+	echo "usage: $exe [-d | ssh-crypt <...>]"
 	exit
 	;;
 -d)
-	ssh-crypt -d <"$patdir/$sshid"
+	$dec_cmd <"$patdir/$sshid"
 	exit
 	;;
 ssh-crypt)
@@ -122,7 +135,7 @@ ssh-crypt)
 esac
 
 msg="Generate a GitHub PAT with 'repo' scope: "
-msg+=$'https://github.com/settings/tokens/new\n'
+msg+=$'<https://github.com/settings/tokens/new>\n'
 read -p "${msg}Enter PAT: " pat
 
-ssh-crypt -e <<<$pat >"$patdir/$sshid"
+$enc_cmd <<<$pat >"$patdir/$sshid"
