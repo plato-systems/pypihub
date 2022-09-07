@@ -10,7 +10,7 @@ import (
 
 const pathBase = "/asset/"
 
-var pathSpec = regexp.MustCompile(`^([\w=]+)/[\w\.+-]+$`)
+var pathSpec = regexp.MustCompile(`^([\w=_\-]+)/[\w\.+\-]+$`)
 
 type handler struct {
 	makeGHv4Client util.GHv4ClientMaker
